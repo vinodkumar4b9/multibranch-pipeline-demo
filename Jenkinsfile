@@ -1,69 +1,39 @@
 pipeline {
-
-    agent {
-        node {
-            label 'any'
-        }
-    }
-
-    options {
-        buildDiscarder logRotator( 
-                    daysToKeepStr: '16', 
-                    numToKeepStr: '10'
-            )
-    }
+    // no agent required to run here. All steps run in flyweight executor on Master
+    agent none
 
     stages {
-        
-        stage('Cleanup Workspace') {
+        stage("foo") {
             steps {
-                cleanWs()
-                sh """
-                echo "Cleaned Up Workspace For Project"
-                """
+                echo "hello"
             }
         }
-
-        stage('Code Checkout') {
-            steps {
-                checkout([
-                    $class: 'GitSCM', 
-                    branches: [[name: '*/main']], 
-                    userRemoteConfigs: [[url: 'https://github.com/spring-projects/spring-petclinic.git']]
-                ])
-            }
+    }
+    post {
+    /*
+     * These steps will run at the end of the pipeline based on the condition.
+     * Post conditions run in order regardless of their place in pipeline
+     * 1. always - always run
+     * 2. changed - run if something changed from last run
+     * 3. aborted, success, unstable or failure - depending on status
+     */
+        always {
+            echo "I AM ALWAYS first"
         }
-
-        stage(' Unit Testing') {
-            steps {
-                sh """
-                echo "Running Unit Tests"
-                """
-            }
+        changed {
+            echo "CHANGED is run second"
         }
-
-        stage('Code Analysis') {
-            steps {
-                sh """
-                echo "Running Code Analysis"
-                """
-            }
+        aborted {
+          echo "SUCCESS, FAILURE, UNSTABLE, or ABORTED are exclusive of each other"
         }
-
-        stage('Build Deploy Code') {
-            when {
-                branch 'develop'
-            }
-            steps {
-                sh """
-                echo "Building Artifact"
-                """
-
-                sh """
-                echo "Deploying Code"
-                """
-            }
+        success {
+            echo "SUCCESS, FAILURE, UNSTABLE, or ABORTED runs last"
         }
-
-    }   
+        unstable {
+          echo "SUCCESS, FAILURE, UNSTABLE, or ABORTED runs last"
+        }
+        failure {
+            echo "SUCCESS, FAILURE, UNSTABLE, or ABORTED runs last"
+        }
+    }
 }
